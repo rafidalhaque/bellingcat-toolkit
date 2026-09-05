@@ -3,7 +3,7 @@ import path from 'path';
 import pkg from './data.mjs'
 const {apiCall, getCategories, getTools, getRegions, writeIfChanged, getSummary} = pkg;
 import matter from './frontmatter.mjs'
-import { ORG_ID, DEFAULT_COLLECTION_ID, TOOL_PAGE_MAINTAINERS_TEAM_ID, CATEGORY_COLLECTION_IDS } from './config.mjs';
+import { ORG_ID, DEFAULT_COLLECTION_ID, TOOL_PAGE_MAINTAINERS_TEAM_ID } from './config.mjs';
 import { renameSummaryEntry } from './summary.mjs';
 
 /* Example
@@ -207,15 +207,14 @@ function fetchMembers(page='') {
   );
 }
 
-async function createToolOnGitbook(toolName, category, email) {
+async function createToolOnGitbook(toolName, email) {
   debug('Creating tool on Gitbook', toolName);
-  debug('Guardian Category', category);
 
-  // Convert category to collection id.
-  const collection = CATEGORY_COLLECTION_IDS[category];
   const slug = slugify(toolName);
 
-  const space = await createSpace(slug, collection);
+  // No collection: a new tool sits in the default one until publish-tool.yml
+  // files it under its Guardian category. See src/move-space.mjs.
+  const space = await createSpace(slug);
   const team = await createTeam(toolName);
   await addTeamToSpace(space, team, 'review');
 
@@ -294,6 +293,15 @@ async function renameSpace(space, name) {
     body: { "title": name },
   });
   return data;
+}
+
+// GitBook moves a space between collections through a dedicated endpoint:
+// PATCH /spaces/{id} takes title, emoji and edit mode but ignores `parent`.
+async function moveSpace(spaceId, collectionId) {
+  return await apiCall(`https://api.gitbook.com/v1/spaces/${spaceId}/move`, {
+    method: 'POST',
+    body: { parent: collectionId },
+  });
 }
 
 async function updateSpaceEmoji(space, emoji) {
@@ -458,6 +466,7 @@ function updateToolSummary(tool) {
 
 export default {
   createTool,
+  slugify,
   createToolOnGitbook,
   fetchSpace,
   fetchSpaces,
@@ -473,6 +482,7 @@ export default {
   renameTool,
   findSpace,
   renameSpace,
+  moveSpace,
   updateSpaceEmoji,
   deleteSpace,
   deleteTeam,

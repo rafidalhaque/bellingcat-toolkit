@@ -11,31 +11,12 @@ on:
       email:
         description: 'Team Member Email (optional)'
         type: string
-      category:
-        description: 'Guardian Category'
-        type: choice
-        required: true
-        options:
-          - none
-          - archiving
-          - image-video
-          - companies-and-finance
-          - conflict
-          - data
-          - environment-and-wildlife
-          - geolocation
-          - maps-and-satellites
-          - people
-          - social-media
-          - transport
-          - websites
 
 jobs:
   add-tool:
     runs-on: ubuntu-latest
     env:
       TOOL_NAME: ${{ inputs.toolName }}
-      CATEGORY: ${{ inputs.category }}
 
     steps:
       - name: Checkout code
@@ -55,7 +36,7 @@ jobs:
         env:
           GITBOOK_API_TOKEN: ${{ secrets.GITBOOK_API_TOKEN }}
         run: |
-          read -r SPACE_ID TEAM_ID <<< "$(node src/add-space.mjs "$TOOL_NAME" "$EMAIL" "$CATEGORY")"
+          read -r SPACE_ID TEAM_ID <<< "$(node src/add-space.mjs "$TOOL_NAME" "$EMAIL")"
           echo "spaceId=$SPACE_ID" >> "$GITHUB_OUTPUT"
           echo "teamId=$TEAM_ID" >> "$GITHUB_OUTPUT"
           if [ -n "$(git status --porcelain)" ]; then

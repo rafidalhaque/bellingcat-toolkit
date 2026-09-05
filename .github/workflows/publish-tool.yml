@@ -8,12 +8,30 @@ on:
         description: 'Tool Name'
         type: string
         required: true
+      category:
+        description: 'Guardian Category'
+        type: choice
+        required: true
+        options:
+          - archiving
+          - image-video
+          - companies-and-finance
+          - conflict
+          - data
+          - environment-and-wildlife
+          - geolocation
+          - maps-and-satellites
+          - people
+          - social-media
+          - transport
+          - websites
 
 jobs:
   publish-tool:
     runs-on: ubuntu-latest
     env:
       TOOL_NAME: ${{ inputs.toolName }}
+      CATEGORY: ${{ inputs.category }}
 
     steps:
       - name: Checkout code
@@ -58,4 +76,13 @@ jobs:
           commit-message: Publish ${{ inputs.toolName }}
           title: Publish ${{ inputs.toolName }}
           body: Created via publish workflow. In case of merge conflicts, re-run all jobs on [Run ${{ github.run_number }}](https://github.com/bellingcat/toolkit/actions/runs/${{ github.run_id }}).
+
+      # Last, so that a GitBook failure leaves the publish PR standing rather
+      # than failing the job before it is opened. The tool's space is created in
+      # the default collection; this is what files it under its category.
+      - name: Move the GitBook space into its category collection
+        if: ${{ steps.publish.outputs.changes == 'true' }}
+        env:
+          GITBOOK_API_TOKEN: ${{ secrets.GITBOOK_API_TOKEN }}
+        run: node src/move-space.mjs "$TOOL_NAME" "$CATEGORY"
 
